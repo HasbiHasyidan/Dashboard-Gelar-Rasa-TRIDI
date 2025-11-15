@@ -5,10 +5,8 @@ import numpy as np
 import warnings
 from datetime import datetime
 
-# Nonaktifkan peringatan UserWarning Streamlit jika ada
 warnings.filterwarnings('ignore', category=UserWarning, module='streamlit')
 
-# --- Konfigurasi Halaman ---
 st.set_page_config(
     page_title="Gen Z Financial Dashboard Indonesia",
     page_icon="🇮🇩",
@@ -16,17 +14,14 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- Custom CSS dengan Perbaikan Layout ---
 st.markdown("""
 <style>
-    /* FONT BARU - Inter Font Family */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
     * {
         font-family: 'Inter', sans-serif;
     }
     
-    /* WARNA UTAMA - Professional Dark Blue Theme */
     .main-header {
         font-size: 2.8rem !important;
         color: #1a365d;
@@ -50,7 +45,6 @@ st.markdown("""
         text-align: center;
     }
     
-    /* METRIC CARD - SERAGAM DAN PROFESIONAL */
     .metric-card {
         background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
         padding: 1.5rem;
@@ -93,7 +87,6 @@ st.markdown("""
         font-weight: 400;
     }
     
-    /* TAB STYLING YANG LEBIH PROFESIONAL */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0px;
         background-color: #ffffff;
@@ -132,7 +125,6 @@ st.markdown("""
         background-color: transparent;
     }
     
-    /* BOX STYLES - Modern Dark Theme */
     .insight-box {
         background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
         padding: 1.8rem;
@@ -161,7 +153,6 @@ st.markdown("""
         color: #2d3748;
     }
     
-    /* CHART HEADER - Lebih ringan */
     .chart-header {
         font-size: 1.3rem;
         font-weight: 700;
@@ -175,7 +166,6 @@ st.markdown("""
         border-radius: 10px;
     }
     
-    /* CUSTOM COLORS */
     :root {
         --primary-color: #4299e1;
         --secondary-color: #48bb78;
@@ -186,10 +176,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- Definisi Mapping untuk Likert Scale ---
 def get_survey_column_map(df_survey):
-    """Menyediakan mapping nama kolom Likert yang panjang menjadi nama yang ringkas dan menghitung skor komposit yang lebih akurat."""
-    
     try:
         if df_survey.shape[1] < 57:
             st.error("Data Survei tidak memiliki kolom sebanyak yang diharapkan untuk Likert Scale.")
@@ -200,7 +187,6 @@ def get_survey_column_map(df_survey):
         st.error("Data Survei tidak memiliki kolom sebanyak yang diharapkan untuk Likert Scale.")
         return []
 
-    # Mapping nama panjang ke nama pendek yang lebih intuitif
     short_titles = {
         long_cols[0]: "Lit 1: Identifikasi Risiko", long_cols[1]: "Lit 2: Investasi yang Baik", long_cols[2]: "Lit 3: Pemahaman Angka", long_cols[3]: "Lit 4: Alokasi Dana", long_cols[4]: "Lit 5: Proyeksi Kas", long_cols[5]: "Lit 6: Hindari Belanja Impulsif", long_cols[6]: "Lit 7: Metrik Keuangan", long_cols[7]: "Lit 8: Cash Flow & Profit", long_cols[8]: "Lit 9: Laporan Keuangan",
         long_cols[9]: "FT 1: Risiko Fintech", long_cols[10]: "FT 2: Penggunaan Digital Payment", long_cols[11]: "FT 3: Penggunaan Pinjaman", long_cols[12]: "FT 4: Asset Management", long_cols[13]: "FT 5: Produk Digital Payment", long_cols[14]: "FT 6: Digital Asset Management", long_cols[15]: "FT 7: Alternatif Digital", long_cols[16]: "FT 8: Asuransi Digital", long_cols[17]: "FT 9: Hak Konsumen",
@@ -211,7 +197,6 @@ def get_survey_column_map(df_survey):
         
     df_survey.rename(columns=short_titles, inplace=True)
         
-    # --- PERHITUNGAN SKOR KOMPOSIT YANG AKURAT ---
     literasi_cols = [col for col in df_survey.columns if col.startswith('Lit ')]
     
     perilaku_pos_cols = [col for col in df_survey.columns if col.startswith('Beh ')] + [col for col in df_survey.columns if col.startswith('DM ') and 'DM 1' not in col and 'DM 2' not in col and 'DM 3' not in col]
@@ -220,11 +205,9 @@ def get_survey_column_map(df_survey):
     kesejahteraan_pos_cols = [col for col in df_survey.columns if col.startswith('Well ') and 'Well 5' not in col and 'Well 6' not in col and 'Well 7' not in col and 'Well 8' not in col and 'Well 9' not in col]
     kesejahteraan_neg_cols = ['Well 5: Tidak Dapat yang Diinginkan', 'Well 6: Tertinggal Finansial', 'Well 7: Keuangan Mengendalikan', 'Well 8: Kontrol Gagal', 'Well 9: Tidak Nikmati Hidup']
 
-    # Inversi skor untuk pernyataan negatif
     neg_cols_to_invert = perilaku_neg_cols + kesejahteraan_neg_cols
     df_survey[neg_cols_to_invert] = 5 - df_survey[neg_cols_to_invert]
         
-    # Hitung Komposit
     df_survey['Composite_Literasi'] = df_survey[literasi_cols].mean(axis=1)
     df_survey['Composite_Perilaku_DM'] = df_survey[perilaku_pos_cols + [col for col in perilaku_neg_cols]].mean(axis=1)
     df_survey['Composite_Kesejahteraan'] = df_survey[kesejahteraan_pos_cols + [col for col in kesejahteraan_neg_cols]].mean(axis=1)
@@ -234,7 +217,6 @@ def get_survey_column_map(df_survey):
     return renamed_likert_cols
 
 def income_to_numeric(income_str):
-    """Konversi kategori pendapatan/pengeluaran ke nilai rata-rata numerik"""
     if pd.isna(income_str): return np.nan
     income_str_clean = str(income_str).replace(' – ', ' - ').strip()
     income_str_clean = income_str_clean.replace('Rp', '').replace('.', '').strip()
@@ -250,7 +232,6 @@ def income_to_numeric(income_str):
 
 @st.cache_data
 def load_data():
-    """Memuat data dari file XLSX dan membersihkannya."""
     try:
         df_genz = pd.read_excel("Cleaning GenZ Financial Profile.xlsx")
         df_regional = pd.read_excel("Regional_Economic_Indicators.xlsx")
@@ -259,36 +240,29 @@ def load_data():
         st.error(f"Gagal memuat data. Pastikan file ada dan dalam format yang benar: {e}")
         return None, None, None
 
-    # 1. Cleaning GenZ Financial Profile
     df_genz.rename(columns={'user_id ID': 'user_id'}, inplace=True)
     current_year = datetime.now().year
     df_genz['Age'] = current_year - df_genz['birth_year']
 
-    # Konversi kategori pendapatan/pengeluaran ke nilai rata-rata numerik
     df_genz['avg_monthly_income_num'] = df_genz['avg_monthly_income'].apply(income_to_numeric)
     df_genz['avg_monthly_expense_num'] = df_genz['avg_monthly_expense'].apply(income_to_numeric)
     df_genz['net_financial_standing'] = df_genz['avg_monthly_income_num'] - df_genz['avg_monthly_expense_num']
     
-    # NEW KPI: Savings Rate Proxy
     df_genz['saving_rate_proxy'] = np.where(
         df_genz['avg_monthly_income_num'] > 0, 
         (df_genz['net_financial_standing'] / df_genz['avg_monthly_income_num']), 
         np.nan
     )
     
-    # NEW KPI: Investment & Loan Flags
     df_genz['is_investor'] = df_genz['investment_type'] != 'Tidak Ada'
     df_genz['has_loan'] = df_genz['outstanding_loan'] > 0
     
-    # Standardize province names for merging
     df_genz['Provinsi_clean'] = df_genz['province'].str.strip()
     df_regional.rename(columns={'Provinsi': 'Provinsi_clean'}, inplace=True)
     df_regional['Provinsi_clean'] = df_regional['Provinsi_clean'].str.strip()
     
-    # Merge Data 1 & Data 2
     df_merged = pd.merge(df_genz, df_regional, on='Provinsi_clean', how='left')
 
-    # 2. Survey Data Cleaning & Merging
     df_survey.rename(columns={
         'Province of Origin': 'province', 
         'Last Education': 'education_level', 
@@ -300,35 +274,29 @@ def load_data():
         'Marital Status': 'marital_status'
     }, inplace=True)
         
-    # Rename kolom Likert & Hitung skor komposit
     get_survey_column_map(df_survey)
         
     df_survey['province'] = df_survey['province'].str.strip()
         
     return df_merged, df_survey, df_regional
 
-# --- Main Program Execution ---
 df_merged, df_survey, df_regional = load_data()
 
-# --- Updated Color Palette ---
 primary_color = "#4299e1"
 secondary_color = "#48bb78"
 warning_color = "#ed8936"
 accent_color = "#9f7aea"
 dark_color = "#2d3748"
 
-# --- Judul Dashboard ---
-st.markdown('<p class="main-header">Dashboard Profil Keuangan Generasi Z Indonesia 🇮🇩</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header">Dashboard Profil Keuangan Generasi Z Indonesia</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-header">Analisis Mendalam Pola, Perilaku, dan Dinamika Keuangan Generasi Muda Indonesia | Gelar Rasa 2025</p>', unsafe_allow_html=True)
 
 if df_merged is not None and df_survey is not None:
     
-    # --- FILTER SECTION DI MAIN PAGE - TANPA CARD BIRU ---
     st.markdown("### 🔍 Filter Data")
     col1, col2, col3 = st.columns([1, 1, 1])
     
     with col1:
-        # Buat daftar filter options yang tersedia
         filter_options = ['Semua Data']
         available_filters = []
         
@@ -349,7 +317,6 @@ if df_merged is not None and df_survey is not None:
             key="filter_type"
         )
     
-    # Penentuan kolom filter dengan pengecekan keamanan
     filter_col = None
     if filter_type == 'Status Pekerjaan' and 'employment_status' in df_merged.columns:
         filter_col = 'employment_status'
@@ -370,9 +337,7 @@ if df_merged is not None and df_survey is not None:
                 selected_value = 'Semua'
         else:
             selected_value = 'Semua Responden'
-            st.info("Tidak ada filter yang dipilih")
     
-    # Apply Filter Logic dengan pengecekan keamanan
     df_genz_filtered = df_merged.copy()
     df_survey_filtered = df_survey.copy()
     
@@ -389,12 +354,9 @@ if df_merged is not None and df_survey is not None:
         if selected_value != 'Semua Responden':
             st.markdown(f"**Filter Aktif:** {filter_type} = **{selected_value}**")
             st.markdown(f"**Jumlah Data:** {len(df_genz_filtered):,} responden")
-        else:
-            st.markdown("**Status:** Menampilkan semua data")
     
     st.markdown("---")
 
-    # --- Tabs yang Disesuaikan ---
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📊 Data Summary",
         "👥 Demografi & Finansial", 
@@ -403,16 +365,11 @@ if df_merged is not None and df_survey is not None:
         "📋 Metadata & Metodologi"
     ])
 
-    # =====================================================================================
-    # TAB 1: EXECUTIVE SUMMARY
-    # =====================================================================================
     with tab1:
         st.header("📊 Summary Berdasarkan Data")
         
-        # Hitung KPI dengan pengecekan keamanan
         total_respondents = df_genz_filtered.shape[0]
         
-        # Handle missing columns safely
         avg_anxiety = df_genz_filtered['financial_anxiety_score'].mean() if 'financial_anxiety_score' in df_genz_filtered.columns else 0
         avg_net = df_genz_filtered['net_financial_standing'].mean() if 'net_financial_standing' in df_genz_filtered.columns else 0
         avg_saving_rate = df_genz_filtered['saving_rate_proxy'].mean() * 100 if 'saving_rate_proxy' in df_genz_filtered.columns else 0
@@ -424,7 +381,6 @@ if df_merged is not None and df_survey is not None:
         else:
             avg_composite = np.nan
         
-        # Key Metrics
         col1, col2, col3 = st.columns(3)
         col4, col5, col6 = st.columns(3)
         
@@ -486,7 +442,6 @@ if df_merged is not None and df_survey is not None:
         
         st.markdown("---")
         
-        # Chart Section
         col_left, col_right = st.columns(2)
         
         with col_left:
@@ -509,7 +464,6 @@ if df_merged is not None and df_survey is not None:
                     tooltip=[alt.Tooltip('net_financial_standing', bin=True, title='Rentang Finansial'), 'count()']
                 ).properties(height=400)
                 
-                # Tambahkan garis rata-rata
                 avg_line = alt.Chart(pd.DataFrame({'x': [avg_net]})).mark_rule(
                     color='red',
                     strokeWidth=2,
@@ -549,7 +503,6 @@ if df_merged is not None and df_survey is not None:
             else:
                 st.info("Tidak ada data survei yang tersedia untuk kelompok ini.")
         
-        # Insight Box
         if 'net_financial_standing' in df_genz_filtered.columns:
             positive_count = len(df_genz_filtered[df_genz_filtered['net_financial_standing'] > 0])
             positive_pct = (positive_count / len(df_genz_filtered)) * 100 if len(df_genz_filtered) > 0 else 0
@@ -569,13 +522,9 @@ if df_merged is not None and df_survey is not None:
         """
         st.markdown(f'<div class="insight-box">{insight_text}</div>', unsafe_allow_html=True)
 
-    # =====================================================================================
-    # TAB 2: DEMOGRAFI & FINANSIAL
-    # =====================================================================================
     with tab2:
         st.header("👥 Demografi & Keseimbangan Finansial")
         
-        # --- PENJELASAN TAB ---
         st.markdown("""
         <div class="analysis-box">
         <strong>🎯 Mengenal Lebih Dekat Gen Z Indonesia:</strong><br>
@@ -589,7 +538,6 @@ if df_merged is not None and df_survey is not None:
         with col1:
             st.markdown('<p class="chart-header">👥 Profil Demografi Responden</p>', unsafe_allow_html=True)
             
-            # Gender Distribution yang lebih menarik
             if 'gender' in df_genz_filtered.columns:
                 gender_data = df_genz_filtered['gender'].value_counts().reset_index()
                 gender_data.columns = ['Jenis Kelamin', 'Jumlah']
@@ -606,7 +554,6 @@ if df_merged is not None and df_survey is not None:
             else:
                 st.info("Data gender tidak tersedia")
             
-            # Education Distribution
             if 'education_level' in df_genz_filtered.columns:
                 edu_data = df_genz_filtered['education_level'].value_counts().reset_index()
                 edu_data.columns = ['Tingkat Pendidikan', 'Jumlah']
@@ -628,7 +575,6 @@ if df_merged is not None and df_survey is not None:
         with col2:
             st.markdown('<p class="chart-header">💰 Analisis Kesehatan Finansial</p>', unsafe_allow_html=True)
             
-            # Bubble Chart yang lebih informatif
             if all(col in df_genz_filtered.columns for col in ['avg_monthly_income_num', 'avg_monthly_expense_num', 'net_financial_standing']):
                 df_bubble = df_genz_filtered.dropna(subset=['avg_monthly_income_num', 'avg_monthly_expense_num']).copy()
                 df_bubble['status_keuangan'] = np.where(
@@ -658,7 +604,6 @@ if df_merged is not None and df_survey is not None:
                     ]
                 ).properties(height=350, title='Peta Kesehatan Finansial: Pendapatan vs Pengeluaran')
                 
-                # Garis impas
                 max_val = max(df_bubble['avg_monthly_income_num'].max(), 
                              df_bubble['avg_monthly_expense_num'].max())
                 line_data = pd.DataFrame({'x': [0, max_val], 'y': [0, max_val]})
@@ -680,7 +625,6 @@ if df_merged is not None and df_survey is not None:
             else:
                 st.info("Data pendapatan dan pengeluaran tidak tersedia untuk analisis ini")
 
-        # Analisis Mendalam Pekerjaan
         st.markdown('<p class="chart-header">💼 Analisis Posisi Finansial berdasarkan Pekerjaan</p>', unsafe_allow_html=True)
         
         if 'employment_status' in df_genz_filtered.columns and all(col in df_genz_filtered.columns for col in ['net_financial_standing', 'avg_monthly_income_num', 'avg_monthly_expense_num']):
@@ -693,7 +637,6 @@ if df_merged is not None and df_survey is not None:
             job_analysis.columns = ['Pekerjaan', 'Rata2_Saldo', 'Rata2_Pendapatan', 'Rata2_Pengeluaran', 'Jumlah_Responden']
             job_analysis = job_analysis.sort_values('Rata2_Pendapatan', ascending=False)
             
-            # Melt data untuk membuat chart yang lebih baik
             job_melted = job_analysis.melt(id_vars=['Pekerjaan', 'Jumlah_Responden'], 
                                          value_vars=['Rata2_Pendapatan', 'Rata2_Pengeluaran'],
                                          var_name='Jenis', 
@@ -704,7 +647,6 @@ if df_merged is not None and df_survey is not None:
                 'Rata2_Pengeluaran': 'Pengeluaran'
             })
             
-            # Chart yang lebih baik dengan dual encoding
             base = alt.Chart(job_melted).encode(
                 x=alt.X('Pekerjaan:N', title='Jenis Pekerjaan', axis=alt.Axis(labelAngle=-45)),
                 y=alt.Y('Nilai:Q', title='Nilai (Rp)', axis=alt.Axis(format='~s')),
@@ -724,13 +666,9 @@ if df_merged is not None and df_survey is not None:
         else:
             st.info("Data pekerjaan tidak tersedia untuk analisis ini")
 
-    # =====================================================================================
-    # TAB 3: PERILAKU & LITERASI
-    # =====================================================================================
     with tab3:
         st.header("💡 Perilaku & Literasi Finansial")
         
-        # --- PENJELASAN TAB ---
         st.markdown("""
         <div class="analysis-box">
         <strong>🧠 Mengungkap Pola Pikir Finansial Gen Z:</strong><br>
@@ -739,13 +677,11 @@ if df_merged is not None and df_survey is not None:
         </div>
         """, unsafe_allow_html=True)
         
-        
         col1, col2 = st.columns(2)
         
         with col1:
             st.markdown('<p class="chart-header">📱 Revolusi Digital: Fintech & Investasi</p>', unsafe_allow_html=True)
             
-            # Fintech Apps dengan visual yang menarik
             if 'main_fintech_app' in df_genz_filtered.columns:
                 fintech_data = df_genz_filtered['main_fintech_app'].value_counts().reset_index()
                 fintech_data.columns = ['Aplikasi', 'Jumlah']
@@ -766,7 +702,6 @@ if df_merged is not None and df_survey is not None:
             else:
                 st.info("Data aplikasi fintech tidak tersedia")
             
-            # Investment Types
             if 'investment_type' in df_genz_filtered.columns:
                 investment_data = df_genz_filtered['investment_type'].value_counts().reset_index()
                 investment_data.columns = ['Jenis Investasi', 'Jumlah']
@@ -790,7 +725,6 @@ if df_merged is not None and df_survey is not None:
         with col2:
             st.markdown('<p class="chart-header">🎯 Pola Perilaku & Literasi</p>', unsafe_allow_html=True)
             
-            # Tujuan Pinjaman dengan visual yang lebih baik
             if 'has_loan' in df_genz_filtered.columns and 'loan_usage_purpose' in df_genz_filtered.columns:
                 if df_genz_filtered['has_loan'].sum() > 0:
                     loan_data = df_genz_filtered[df_genz_filtered['has_loan'] == True]['loan_usage_purpose'].value_counts().reset_index()
@@ -814,11 +748,9 @@ if df_merged is not None and df_survey is not None:
             else:
                 st.info("Data pinjaman tidak tersedia")
             
-            # Histogram untuk distribusi skor literasi
             st.markdown('<p class="chart-header">📊 Distribusi Skor Literasi Finansial</p>', unsafe_allow_html=True)
             
             if len(df_survey_filtered) > 0 and 'Composite_Literasi' in df_survey_filtered.columns:
-                # Histogram untuk distribusi skor literasi
                 hist_literasi = alt.Chart(df_survey_filtered).mark_bar(
                     cornerRadiusTopLeft=5,
                     cornerRadiusTopRight=5
@@ -833,7 +765,6 @@ if df_merged is not None and df_survey is not None:
                 
                 st.altair_chart(hist_literasi, use_container_width=True)
                 
-                # Analisis distribusi
                 mean_literasi = df_survey_filtered['Composite_Literasi'].mean()
                 median_literasi = df_survey_filtered['Composite_Literasi'].median()
                 
@@ -846,13 +777,9 @@ if df_merged is not None and df_survey is not None:
             else:
                 st.info("📚 Data survei tidak tersedia untuk analisis ini")
 
-    # =====================================================================================
-    # TAB 4: REGIONAL & ANALISIS
-    # =====================================================================================
     with tab4:
         st.header("🗺️ Analisis Regional & Temuan Strategis")
         
-        # --- PENJELASAN TAB ---
         st.markdown("""
         <div class="analysis-box">
         <strong>🌍 Peta Finansial Gen Z Indonesia:</strong><br>
@@ -861,10 +788,8 @@ if df_merged is not None and df_survey is not None:
         </div>
         """, unsafe_allow_html=True)
         
-        # Data agregat per provinsi
         aggregation_dict = {'user_id': 'count'}
         
-        # Tambahkan kolom lain jika ada
         if 'financial_anxiety_score' in df_genz_filtered.columns:
             aggregation_dict['financial_anxiety_score'] = 'mean'
         if 'net_financial_standing' in df_genz_filtered.columns:
@@ -910,7 +835,6 @@ if df_merged is not None and df_survey is not None:
                 
                 st.altair_chart(bar_chart, use_container_width=True)
                 
-                # Analisis Chart Peringkat Finansial
                 if len(top_provinces) > 0:
                     best_province = top_provinces.iloc[0]['Provinsi_clean']
                     best_value = top_provinces.iloc[0]['net_financial_standing']
@@ -959,7 +883,6 @@ if df_merged is not None and df_survey is not None:
                 
                 correlation_digital = df_region_full['digital_time_spent_per_day'].corr(df_region_full['net_financial_standing'])
                 
-                # Analisis Hubungan Digital vs Finansial
                 if correlation_digital > 0.3:
                     insight_digital = "Terdapat korelasi positif antara penggunaan digital dan kesehatan finansial"
                     implication = "Gen Z yang lebih melek digital cenderung memiliki kondisi finansial yang lebih baik"
@@ -982,9 +905,6 @@ if df_merged is not None and df_survey is not None:
             else:
                 st.info("🌐 Data regional tidak cukup untuk analisis mendalam")
 
-    # =====================================================================================
-    # TAB 5: METADATA & METODOLOGI
-    # =====================================================================================
     with tab5:
         st.header("ℹ️ Tentang Data & Metodologi")
         st.subheader("📋 Sumber Data")
@@ -1018,7 +938,6 @@ if df_merged is not None and df_survey is not None:
 else:
     st.error("❌ Gagal memuat data. Silakan periksa file sumber dan pastikan formatnya sesuai.")
 
-# --- Footer ---
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #666; padding: 2rem;'>"
